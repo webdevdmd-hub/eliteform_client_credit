@@ -1,0 +1,7 @@
+{
+  "name": "EliteForms | Client Registration",
+  "description": "Secure, aesthetic client registration portal with Admin management and PDF generation.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
