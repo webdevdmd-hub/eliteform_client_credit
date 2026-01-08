@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
+import { getFunctions } from "firebase/functions";
 import firebase from "firebase/compat/app";
 import "firebase/compat/firestore";
 import "firebase/compat/auth";
@@ -30,6 +31,9 @@ export const db = app.firestore();
 
 // Export Modular Storage
 export const storage = getStorage(app as any);
+
+// Export Modular Functions
+export const functions = getFunctions(app as any);
 
 // Helper for secondary app
 export const createSecondaryApp = () => {

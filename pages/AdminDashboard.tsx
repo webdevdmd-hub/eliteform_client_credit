@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { db, createSecondaryApp } from '../services/firebase';
+import { db, createSecondaryApp, functions } from '../services/firebase';
 import { deleteApp } from 'firebase/app';
 import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
+import { httpsCallable } from 'firebase/functions';
 import { ClientRecord, ClientStatus, UserRole } from '../types';
 import { Button, Card, Input } from '../components/ui/Components';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { PDFDocument } from '../components/PDFDocument';
-import { LogOut, FileText, UserPlus, Eye, AlertTriangle, Lock, Unlock } from 'lucide-react';
+import { LogOut, FileText, UserPlus, Eye, AlertTriangle, Lock, Unlock, Trash2 } from 'lucide-react';
 import { auth } from '../services/firebase';
 
 export const AdminDashboard: React.FC = () => {
@@ -17,6 +18,7 @@ export const AdminDashboard: React.FC = () => {
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [statusChangingId, setStatusChangingId] = useState<string | null>(null);
   const [creditToggleId, setCreditToggleId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     // onSnapshot Compat
@@ -212,6 +214,28 @@ export const AdminDashboard: React.FC = () => {
      }
   };
 
+  const handleDeleteClient = async (uid: string, email?: string, companyName?: string) => {
+    const label = companyName || email || uid;
+    const confirmed = window.confirm(
+      `Delete ${label} permanently?\n\nThis will remove the Auth user, Firestore docs, and Storage files. This cannot be undone.`
+    );
+    if (!confirmed) return;
+    try {
+      setDeletingId(uid);
+      const deleteClient = httpsCallable(functions, 'deleteClient');
+      await deleteClient({ uid });
+      setClients(prev => prev.filter(c => c.uid !== uid));
+      if (selectedClient?.uid === uid) {
+        setSelectedClient(null);
+      }
+      alert('Client deleted successfully.');
+    } catch (err: any) {
+      alert('Failed to delete client: ' + err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (selectedClient) {
       // Simple Review View
       return (
@@ -220,6 +244,15 @@ export const AdminDashboard: React.FC = () => {
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
                   <h1 className="text-2xl font-bold">{selectedClient.sectionA?.companyName || 'Client'} - Review</h1>
                   <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        isLoading={deletingId === selectedClient.uid}
+                        onClick={() => handleDeleteClient(selectedClient.uid, selectedClient.email, selectedClient.sectionA?.companyName)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Client
+                      </Button>
                       {(selectedClient as any).reopenStatus === 'REG_REOPEN_PENDING' && (
                         <Button
                           variant="outline"
@@ -430,6 +463,14 @@ export const AdminDashboard: React.FC = () => {
                       </Button>
                     )}
                     <Button size="sm" variant="ghost" onClick={() => openClientForm(client.uid)}><Eye className="w-4 h-4"/></Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      isLoading={deletingId === client.uid}
+                      onClick={() => handleDeleteClient(client.uid, client.email, client.companyName)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </td>
                 </tr>
               ))}
