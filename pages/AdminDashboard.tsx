@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { db, createSecondaryApp, functions } from '../services/firebase';
+import { db, createSecondaryApp, auth } from '../services/firebase';
 import { deleteApp } from 'firebase/app';
 import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
-import { httpsCallable } from 'firebase/functions';
 import { ClientRecord, ClientStatus, UserRole } from '../types';
 import { Button, Card, Input } from '../components/ui/Components';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { PDFDocument } from '../components/PDFDocument';
 import { LogOut, FileText, UserPlus, Eye, AlertTriangle, Lock, Unlock, Trash2 } from 'lucide-react';
-import { auth } from '../services/firebase';
 
 export const AdminDashboard: React.FC = () => {
   const [clients, setClients] = useState<ClientRecord[]>([]);
@@ -222,8 +220,33 @@ export const AdminDashboard: React.FC = () => {
     if (!confirmed) return;
     try {
       setDeletingId(uid);
-      const deleteClient = httpsCallable(functions, 'deleteClient');
-      await deleteClient({ uid });
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('You must be signed in to delete clients.');
+      }
+      const token = await currentUser.getIdToken();
+      const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+      const baseUrl = `https://us-central1-${projectId}.cloudfunctions.net`;
+      const response = await fetch(`${baseUrl}/deleteClient`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ uid })
+      });
+      if (!response.ok) {
+        let message = 'Failed to delete client.';
+        try {
+          const payload = await response.json();
+          if (payload?.error) {
+            message = `Failed to delete client: ${payload.error}`;
+          }
+        } catch (err) {
+          // ignore malformed error payloads
+        }
+        throw new Error(message);
+      }
       setClients(prev => prev.filter(c => c.uid !== uid));
       if (selectedClient?.uid === uid) {
         setSelectedClient(null);
