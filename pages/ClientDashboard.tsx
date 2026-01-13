@@ -26,6 +26,7 @@ export const ClientDashboard: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [creditRequestStatus, setCreditRequestStatus] = useState<'none' | 'requested' | 'approved'>('none');
   const [hasCreditAccess, setHasCreditAccess] = useState(false);
+  const [showBankStatement, setShowBankStatement] = useState(true);
   const [activeTab, setActiveTab] = useState<'client' | 'credit'>('client');
   const [creditDocId, setCreditDocId] = useState<string | null>(null);
   const [creditSaving, setCreditSaving] = useState(false);
@@ -180,6 +181,7 @@ export const ClientDashboard: React.FC = () => {
            const profileData = clientProfile.data();
            setCreditRequestStatus(profileData?.creditRequestStatus || 'none');
            setHasCreditAccess(profileData?.hasCreditAccess || false);
+           setShowBankStatement(profileData?.showBankStatement ?? true);
            setRegReopenStatus(profileData?.reopenStatus || null);
            setCreditReopenStatus(profileData?.creditReopenStatus || null);
            // Update status to SENT if it was CREDENTIALS_SENT
@@ -348,6 +350,7 @@ export const ClientDashboard: React.FC = () => {
         const data = snap.data();
         setCreditRequestStatus((data?.creditRequestStatus as any) || 'none');
         setHasCreditAccess(!!data?.hasCreditAccess);
+        setShowBankStatement(data?.showBankStatement ?? true);
       },
       (err) => console.error("Credit access listener error:", err)
     );
@@ -1692,15 +1695,19 @@ export const ClientDashboard: React.FC = () => {
                           {resolvedCreditDocs.passportCopyUrl && <div className="text-xs text-green-700 mt-2">Successfully Uploaded</div>}
                         </div>
                         <div>
-                          <FileUpload
-                            label="Bank Statement (3–6 Months)"
-                            required={!resolvedCreditDocs.bankStatementUrl}
-                            path={`clients/${clientId}/credit/bankStatement`}
-                            onUploadComplete={(url) => setValue('creditApplication.documents.bankStatementUrl', url, { shouldDirty: true })}
-                            currentUrl={resolvedCreditDocs.bankStatementUrl}
-                            disabled={!!resolvedCreditDocs.bankStatementUrl}
-                          />
-                          {resolvedCreditDocs.bankStatementUrl && <div className="text-xs text-green-700 mt-2">Successfully Uploaded</div>}
+                          {showBankStatement && (
+                            <>
+                              <FileUpload
+                                label="Bank Statement (3–6 Months)"
+                                required={!resolvedCreditDocs.bankStatementUrl}
+                                path={`clients/${clientId}/credit/bankStatement`}
+                                onUploadComplete={(url) => setValue('creditApplication.documents.bankStatementUrl', url, { shouldDirty: true })}
+                                currentUrl={resolvedCreditDocs.bankStatementUrl}
+                                disabled={!!resolvedCreditDocs.bankStatementUrl}
+                              />
+                              {resolvedCreditDocs.bankStatementUrl && <div className="text-xs text-green-700 mt-2">Successfully Uploaded</div>}
+                            </>
+                          )}
                         </div>
                       </div>
                     </Card>

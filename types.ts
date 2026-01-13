@@ -25,6 +25,7 @@ export interface ClientRecord {
   status: ClientStatus;
   creditRequestStatus?: 'none' | 'requested' | 'approved';
   hasCreditAccess?: boolean;
+  showBankStatement?: boolean;
   createdAt: number;
   updatedAt: number;
   pdfUrl?: string;

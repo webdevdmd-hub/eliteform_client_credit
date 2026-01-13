@@ -16,6 +16,7 @@ export const AdminDashboard: React.FC = () => {
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [statusChangingId, setStatusChangingId] = useState<string | null>(null);
   const [creditToggleId, setCreditToggleId] = useState<string | null>(null);
+  const [bankStatementToggleId, setBankStatementToggleId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export const AdminDashboard: React.FC = () => {
         status: ClientStatus.CREATED,
         creditRequestStatus: 'none',
         hasCreditAccess: false,
+        showBankStatement: true,
         createdAt: Date.now(),
         updatedAt: Date.now()
       });
@@ -131,6 +133,22 @@ export const AdminDashboard: React.FC = () => {
       alert("Error updating credit access: " + err.message);
     } finally {
       setCreditToggleId(null);
+    }
+  };
+
+  const toggleBankStatementVisibility = async (uid: string, enabled: boolean) => {
+    try {
+      setBankStatementToggleId(uid);
+      await db.collection('clients').doc(uid).update({
+        showBankStatement: enabled,
+        updatedAt: Date.now()
+      });
+      setClients(prev => prev.map(c => c.clientId === uid ? { ...c, showBankStatement: enabled } : c));
+      setSelectedClient(prev => prev && prev.uid === uid ? { ...prev, showBankStatement: enabled } : prev);
+    } catch (err: any) {
+      alert("Error updating bank statement visibility: " + err.message);
+    } finally {
+      setBankStatementToggleId(null);
     }
   };
 
@@ -420,13 +438,14 @@ export const AdminDashboard: React.FC = () => {
                 <th className="p-4 font-semibold text-stone-600">Email</th>
                 <th className="p-4 font-semibold text-stone-600">Status</th>
                 <th className="p-4 font-semibold text-stone-600">Credit Access</th>
+                <th className="p-4 font-semibold text-stone-600">Bank Statement</th>
                 <th className="p-4 font-semibold text-stone-600">Actions</th>
               </tr>
             </thead>
             <tbody>
               {clients.length === 0 && !permissionError && (
                 <tr>
-                  <td colSpan={4} className="p-8 text-center text-stone-400">
+                  <td colSpan={6} className="p-8 text-center text-stone-400">
                     No clients found.
                   </td>
                 </tr>
@@ -460,6 +479,16 @@ export const AdminDashboard: React.FC = () => {
                       {client.creditRequestStatus === 'requested' && !client.hasCreditAccess && <Lock className="w-4 h-4 text-amber-600" />}
                       {client.hasCreditAccess && <Unlock className="w-4 h-4 text-green-600" />}
                     </div>
+                  </td>
+                  <td className="p-4">
+                    <button
+                      onClick={() => toggleBankStatementVisibility(client.uid, !(client.showBankStatement ?? true))}
+                      disabled={bankStatementToggleId === client.uid}
+                      className={`px-3 py-1 text-xs font-semibold rounded border transition-colors ${client.showBankStatement ?? true ? 'bg-green-100 text-green-700 border-green-200' : 'bg-stone-100 text-stone-600 border-stone-200'}`}
+                      title="Toggle bank statement visibility for credit application"
+                    >
+                      {bankStatementToggleId === client.uid ? 'Saving...' : (client.showBankStatement ?? true ? 'Visible' : 'Hidden')}
+                    </button>
                   </td>
                   <td className="p-4 flex flex-wrap gap-2">
                     {client.status === ClientStatus.CREATED && (

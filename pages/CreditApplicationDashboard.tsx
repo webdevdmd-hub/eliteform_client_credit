@@ -17,6 +17,7 @@ type CreditApplicationDashboardProps = {
   creditRefs: any;
   lineInputClass: string;
   clientId: string;
+  showBankStatement?: boolean;
   creditState: {
     creditSubmitted: boolean;
     creditSaving: boolean;
@@ -39,6 +40,7 @@ export const CreditApplicationDashboard: React.FC<CreditApplicationDashboardProp
   creditRefs,
   lineInputClass,
   clientId,
+  showBankStatement = true,
   creditState,
   setShowCreditConfirm,
   saveCreditApplication,
@@ -330,15 +332,19 @@ export const CreditApplicationDashboard: React.FC<CreditApplicationDashboardProp
               {resolvedCreditDocs.passportCopyUrl && <div className="text-xs text-green-700 mt-2">Successfully Uploaded</div>}
             </div>
             <div>
-              <FileUpload
-                label="Bank Statement (3–6 Months)"
-                required={!resolvedCreditDocs.bankStatementUrl}
-                path={`clients/${clientId}/credit/bankStatement`}
-                onUploadComplete={(url) => setValue('creditApplication.documents.bankStatementUrl', url, { shouldDirty: true })}
-                currentUrl={resolvedCreditDocs.bankStatementUrl}
-                disabled={!!resolvedCreditDocs.bankStatementUrl}
-              />
-              {resolvedCreditDocs.bankStatementUrl && <div className="text-xs text-green-700 mt-2">Successfully Uploaded</div>}
+              {showBankStatement && (
+                <>
+                  <FileUpload
+                    label="Bank Statement (3–6 Months)"
+                    required={!resolvedCreditDocs.bankStatementUrl}
+                    path={`clients/${clientId}/credit/bankStatement`}
+                    onUploadComplete={(url) => setValue('creditApplication.documents.bankStatementUrl', url, { shouldDirty: true })}
+                    currentUrl={resolvedCreditDocs.bankStatementUrl}
+                    disabled={!!resolvedCreditDocs.bankStatementUrl}
+                  />
+                  {resolvedCreditDocs.bankStatementUrl && <div className="text-xs text-green-700 mt-2">Successfully Uploaded</div>}
+                </>
+              )}
             </div>
           </div>
         </Card>
